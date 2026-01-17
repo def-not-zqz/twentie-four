@@ -1,10 +1,12 @@
 import logo from './logo.svg';
 import './App.css';
+// import P2PManager from './components/P2PManager';
+import GameRoom from './components/GameRoom';
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
+    <div className="App" style={{ "backgroundColor": "#ccc" }}>
+      {/* <header className="App-header">
         <img src={logo} className="App-logo" alt="logo" />
         <p>
           Edit <code>src/App.js</code> and save to reload.
@@ -17,7 +19,9 @@ function App() {
         >
           Learn React
         </a>
-      </header>
+      </header> */}
+      {/* <P2PManager /> */}
+      <GameRoom />
     </div>
   );
 }
