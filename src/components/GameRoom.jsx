@@ -1,11 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useP2PHost } from "../hooks/useP2PHost";
 import { useGameLogic } from "../hooks/useGameLogic";
-import { CONN_ACTYPE, CONN_STATUS, GAME_ACTYPE } from "../constants";
+import { CONN_ACTYPE, CONN_STATUS, GAME_ACTYPE, GAME_PHASE } from "../constants";
 import { debug } from "../utils";
 
 const gameCapacity = 2;
 const hostCapacity = gameCapacity - 1;
+
+const hostOnly = true;
+
+const phaseRefreshTimer = 200;
 
 function visualize(data) {
   return typeof data === "string"
@@ -38,72 +42,117 @@ export default function GameRoom() {
   const [inputHostId, setInputHostId] = useState("");
   const [inputMessage, setInputMessage] = useState("");
 
+  const [isAutoMode, setIsAutoMode] = useState(false);
+  const toggleGameAutomate = () => setIsAutoMode(!isAutoMode);
+
+  // --- Adaptive Dispatch for Host and Guests ---
+  const handleAction = useCallback((action, hostOnly = false) => {
+    debug(`[GameRoom] handling action ${JSON.stringify(action)}...`);
+    if (!isConnected) return;
+    if (isHost) {
+      gameDispatch(action); // locally dispatch action
+    } else if (!hostOnly) {
+      broadcast(action);    // send action to host
+    }
+  }, [isConnected, isHost, gameDispatch, broadcast]);
+
+  // Draw cards (dev mode)
+  const handleDrawCards = useCallback(() =>
+    handleAction(gameActions.draw(), hostOnly),
+    [handleAction, gameActions, hostOnly]);
+
+  // Play cards
+  const handlePlayCards = useCallback((id, isHostOnly = false) => {
+    if (!isConnected) return;
+    const slot = gameGetSlot(id);
+    const cards = gameState.players[slot]?.hand || [];
+    handleAction(gameActions.play(id, cards), isHostOnly);
+  }, [isConnected, gameGetSlot, gameState.players, handleAction, gameActions]);
+
+  const handleSelfPlayCards = useCallback(() => handlePlayCards(connState.myId), [handlePlayCards, connState.myId]);
+  const handleOtherPlayCards = useCallback(() => handlePlayCards(connState.peersId[0], hostOnly), [handlePlayCards, connState.peersId, hostOnly]);
+
+  // Flip cards (dev mode)
+  const handleFlipCards = useCallback(() => handleAction(gameActions.flip(), hostOnly), [handleAction, gameActions, hostOnly]);
+
+  // Vote winner or tie
+  const handleVoteWinner = useCallback((idVoteFor) => {
+    handleAction(gameActions.voteWinner(connState.myId, idVoteFor));
+  }, [handleAction, gameActions, connState.myId]);
+
+  const handleVoteSelfWinner = useCallback(() => handleVoteWinner(connState.myId), [handleVoteWinner, connState.myId]);
+  const handleVoteOtherWinner = useCallback(() => handleVoteWinner(connState.peersId[0]), [handleVoteWinner, connState.peersId]);
+  const handleVoteTie = useCallback(() => handleAction(gameActions.voteTie(connState.myId)), [handleAction, gameActions, connState.myId]);
+
+  // Set winner or tie (dev mode)
+  const handleSetWinner = useCallback((idVoteFor) => {
+    handleAction(gameActions.voteWinner(connState.myId, idVoteFor), hostOnly);
+    handleAction(gameActions.voteWinner(connState.peersId[0], idVoteFor), hostOnly);
+  }, [handleAction, gameActions, connState.myId, connState.peersId, hostOnly]);
+
+  const handleSetSelfWinner = useCallback(() => handleSetWinner(connState.myId), [handleSetWinner, connState.myId]);
+  const handleSetOtherWinner = useCallback(() => handleSetWinner(connState.peersId[0]), [handleSetWinner, connState.peersId]);
+
+  // Decide winner (dev mode)
+  const handleDecideWinner = useCallback(() => handleAction(gameActions.decide(), hostOnly), [handleAction, gameActions, hostOnly]);
+
+  // Loot cards (dev mode)
+  const handleLootCards = useCallback(() => handleAction(gameActions.loot(), hostOnly), [handleAction, gameActions, hostOnly]);
+
+  // Next round (dev mode)
+  const handleNextRound = useCallback(() => handleAction(gameActions.next(), hostOnly), [handleAction, gameActions, hostOnly]);
+
+  // --- Other UI APIs ---
+  const handleStartGame = useCallback(() => {
+    if (connState.status !== CONN_STATUS.HOST_CONNECTED) return;
+    gameControls.start(connState.myId, connState.peersId[0]);
+  }, [connState.status, connState.myId, connState.peersId, gameControls]);
+
+  const handleCloseGame = useCallback(() => gameControls.close(), [gameControls]);
+
   // --- Game Listener ---
   // Broadcast gameState on state change.
   useEffect(() => {
     if (isHost) broadcast(gameActions.sync(gameState));
-  }, [gameState, isHost, broadcast]);
+  }, [gameState, isHost, broadcast, gameActions]);
 
-  // --- Adaptive Dispatch for Host and Guests ---
-  const handleAction = (action) => {
-    debug(`[GameRoom] handling action ${action}...`);
-    if (!action) return;
-    if (!isConnected) return;
-    if (isHost) {
-      gameDispatch(action); // locally dispatch action
-    } else {
-      broadcast(action);    // send action to host
-    }
-  };
+  // Game phase automator.
+  useEffect(() => {
+    if (!isHost || !isAutoMode) return;
 
-  // Draw cards (dev mode)
-  const handleDrawCards = () => handleAction(gameActions.draw());
+    const timer = setTimeout(() => {
+      switch (gameState.phase) {
+        case GAME_PHASE.DRAW_CARDS:
+          handleDrawCards();
+          break;
+        case GAME_PHASE.PLAY_CARDS:
+          handleFlipCards();
+          break;
+        case GAME_PHASE.VOTE_WINNER:
+          handleDecideWinner();
+          break;
+        case GAME_PHASE.LOOT_CARDS:
+          handleLootCards();
+          break;
+        case GAME_PHASE.NEXT_ROUND:
+          handleNextRound();
+          break;
+        default:
+          break;
+      }
+    }, phaseRefreshTimer);
 
-  // Play cards
-  const handlePlayCards = (id) => {
-    if (!isConnected) return;
-    const slot = gameGetSlot(id);
-    const cards = gameState.players[slot].hand;
-    handleAction(gameActions.play(id, cards));
-  };
-  const handleSelfPlayCards = () => handlePlayCards(connState.myId);
-  const handleOtherPlayCards = () => handlePlayCards(connState.peersId[0]);
-
-  // Flip cards (dev mode)
-  const handleFlipCards = () => handleAction(gameActions.flip());
-
-  // Vote winner or tie
-  const handleVoteWinner = (idVoteFor) => {
-    handleAction(gameActions.voteWinner(connState.myId, idVoteFor));
-  };
-  const handleVoteSelfWinner = () => handleVoteWinner(connState.myId);
-  const handleVoteOtherWinner = () => handleVoteWinner(connState.peersId[0]);
-  const handleVoteTie = () => handleAction(gameActions.voteTie(connState.myId));
-
-  // Set winner or tie (dev mode)
-  const handleSetWinner = (idVoteFor) => {
-    handleAction(gameActions.voteWinner(connState.myId, idVoteFor));
-    handleAction(gameActions.voteWinner(connState.peersId[0], idVoteFor));
-  };
-  const handleSetSelfWinner = () => handleSetWinner(connState.myId);
-  const handleSetOtherWinner = () => handleSetWinner(connState.peersId[0]);
-
-  // Loot cards (dev mode)
-  const handleLootCards = () => handleAction(gameActions.loot());
-
-  // Next round (dev mode)
-  const handleNextRound = () => handleAction(gameActions.next());
-
-  // --- Other UI APIs ---
-  const handleStartGame = () => {
-    if (connState.status !== CONN_STATUS.HOST_CONNECTED) return;
-    gameControls.start(connState.myId, connState.peersId[0]);
-  };
-
-  const handleCloseGame = gameControls.close;
-
-  const toggleGameAutomate = () => { };
-
+    return () => clearTimeout(timer);
+  }, [
+    isHost,
+    isAutoMode,
+    gameState.phase,
+    handleDrawCards,
+    handleFlipCards,
+    handleDecideWinner,
+    handleLootCards,
+    handleNextRound,
+  ]);
 
   return (
     <div>
@@ -216,10 +265,11 @@ export default function GameRoom() {
             <br />
             <button onClick={handleSetSelfWinner}>自己赢牌</button>
             <button onClick={handleSetOtherWinner}>对方赢牌</button>
+            <button onClick={handleDecideWinner}>谁赢</button>
             <button onClick={handleLootCards}>收牌</button>
             <br />
             <button onClick={handleNextRound}>进入下一轮</button>
-            <button onClick={toggleGameAutomate}>自动游戏</button>
+            <button onClick={toggleGameAutomate}>{isAutoMode ? "关闭" : "打开"}自动游戏</button>
           </div>
         }
 
