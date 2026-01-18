@@ -1,6 +1,7 @@
 import { useReducer, useEffect, useRef, useCallback } from 'react';
 import { GAME_ACTYPE, GAME_PHASE } from '../constants';
 import { gameReducer, INITIAL_GAME_STATE } from '../reducers/gameReducer';
+import { debug } from '../utils';
 
 // --- Helper Functions ---
 function makeRandomArray(size, rng = Math.random) {
@@ -10,83 +11,114 @@ function makeRandomArray(size, rng = Math.random) {
 // --- Main Hook ---
 export const useGameLogic = () => {
   const [state, dispatch] = useReducer(gameReducer, INITIAL_GAME_STATE);
-  const idRef = useRef(null);
 
-  // Unmount
-  useEffect(() => {
-    return () => {
-      idRef.current = null;
-    };
-  }, []);
-
-  // --- API Handlers ---
-  // (id1, id2) => void
-  // Start a new game with players id1 and id2.
+  // --- API: Actions ---
+  // (id1, id2) => void; Start a new game with players id1 and id2.
   const startNewGame = useCallback((id1, id2) => {
-    const idMapping = new Map();
-    idRef.current = idMapping;
-    idMapping.set(id1, "p1");
-    idMapping.set(id2, "p2");
-
-    dispatch({ type: GAME_ACTYPE.SETUP_GAME, payload: makeRandomArray(52) });
+    dispatch({
+      type: GAME_ACTYPE.SETUP_GAME,
+      payload: { id1: id1, id2: id2, rand: makeRandomArray(52) },
+    });
   }, [dispatch]);
 
   const closeGame = useCallback(() => {
     dispatch({ type: GAME_ACTYPE.RESET_GAME });
   }, [dispatch]);
 
-  // () => void
-  // Draw cards for players.
-  const drawCards = useCallback(() => {
-    if (!GAME_PHASE.ROUND_PREP) return;
-    dispatch({ type: GAME_ACTYPE.DRAW_CARDS });
-  }, [dispatch]);
+  // --- API: Helper Functions ---
+  const getSlot = (id) => {
+    const { idToSlot } = state;
+    const idRecord = Object.keys(idToSlot);
+    if (!idRecord.includes(id)) {
+      throw new Error(`Id ${id} is not recorded on list ${idRecord}`);
+    }
+    return idToSlot[id];
+  }
 
-  // (id, cards) => void
-  // Player id play cards.
-  const playCards = useCallback((id, cards) => {
-    if (!GAME_PHASE.ROUND_DRAWED) return;
-    const slot = idRef.current.get(id);
-    dispatch({
+  // --- API: Action Creators ---
+  // () => action; Draw cards for players.
+  const drawCardsAction = useCallback(() => {
+    if (state.phase !== GAME_PHASE.DRAW_CARDS) return;
+    return { type: GAME_ACTYPE.DRAW_CARDS };
+  }, []);
+
+  // (id, cards) => action; Player id play cards.
+  const playCardsAction = useCallback((id, cards) => {
+    if (state.phase !== GAME_PHASE.PLAY_CARDS) return;
+    const slot = getSlot(id, state.idToSlot);
+    return {
       type: GAME_ACTYPE.PLAY_CARDS,
-      payload: {
-        slot: slot,
-        cards: cards,
-      }
-    });
-  }, [dispatch]);
+      payload: { slot: slot, cards: cards },
+    };
+  }, [getSlot]);
 
-  // (id) => void
-  // Player id loots all cards on field.
-  const lootCards = useCallback((id) => {
-    if (!GAME_PHASE.ROUND_PLAYED) return;
-    const slot = idRef.current.get(id);
-    dispatch({ type: GAME_ACTYPE.LOOT_CARDS, payload: slot });
-  }, [dispatch]);
+  const flipCardsAction = useCallback(() => {
+    if (state.phase !== GAME_PHASE.PLAY_CARDS) return;
+    return { type: GAME_ACTYPE.FLIP_CARDS };
+  }, []);
 
-  // () => void
-  // Game moves on to the next round.
-  const nextRound = useCallback(() => {
-    if (!GAME_PHASE.ROUND_RESULT) return;
-    dispatch({ type: GAME_ACTYPE.NEXT_ROUND, payload: makeRandomArray(52) });
-  }, [dispatch]);
+  const voteWinnerAction = useCallback((id, idVoteFor) => {
+    if (state.phase !== GAME_PHASE.VOTE_WINNER) return;
+    const slot = getSlot(id, state.idToSlot);
+    const voteFor = getSlot(idVoteFor, state.idToSlot);
+    return {
+      type: GAME_ACTYPE.VOTE_WINNER,
+      payload: { slot: slot, voteFor: voteFor },
+    };
+  }, [getSlot]);
 
-  // (newState) => void
-  // Game syncs to newState.
-  const syncState = useCallback((newState) => {
-    dispatch({ type: GAME_ACTYPE.SYNC_STATE, payload: newState });
-  }, [dispatch]);
+  const voteTieAction = useCallback((id) => {
+    if (state.phase !== GAME_PHASE.VOTE_WINNER) return;
+    const slot = getSlot(id, state.idToSlot);
+    return {
+      type: GAME_ACTYPE.VOTE_WINNER,
+      payload: { slot: slot, voteFor: "tie" },
+    }
+  }, [getSlot]);
+
+  const decideWinnerAction = useCallback(() => {
+    if (state.phase !== GAME_PHASE.VOTE_WINNER) return;
+    return { type: GAME_ACTYPE.DECIDE_WINNER };
+  }, []);
+
+  // (id) => action; Player id loots all cards on field.
+  const lootCardsAction = useCallback(() => {
+    if (state.phase !== GAME_PHASE.LOOT_CARDS) return;
+    return { type: GAME_ACTYPE.LOOT_CARDS };
+  }, []);
+
+  // () => action; Game moves on to the next round.
+  const nextRoundAction = useCallback(() => {
+    if (state.phase !== GAME_PHASE.NEXT_ROUND) return;
+    return { type: GAME_ACTYPE.NEXT_ROUND, payload: makeRandomArray(52) };
+  }, []);
+
+  // (newState) => action; Game syncs to newState.
+  const syncStateAction = useCallback((newState) => {
+    return { type: GAME_ACTYPE.SYNC_STATE, payload: newState };
+  }, []);
 
   return {
     gameState: state,
     gameDispatch: dispatch,
-    gameStartNewGame: startNewGame,
-    gameCloseGame: closeGame,
-    gameDrawCards: drawCards,
-    gamePlayCards: playCards,
-    gameLootCards: lootCards,
-    gameNextRound: nextRound,
-    gameSyncState: syncState,
+    gameControls: {
+      start: startNewGame,
+      close: closeGame,
+    },
+    gameActions: {
+      draw: drawCardsAction,
+      play: playCardsAction,
+      flip: flipCardsAction,
+      loot: lootCardsAction,
+      next: nextRoundAction,
+      sync: syncStateAction,
+      voteWinner: voteWinnerAction,
+      voteTie: voteTieAction,
+      decide: decideWinnerAction,
+    },
+    gameUtils: {
+      getSlot: getSlot,
+    },
   };
 };
 

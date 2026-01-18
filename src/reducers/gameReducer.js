@@ -9,11 +9,17 @@ export const INITIAL_GAME_STATE = {
 		p1: { hand: [], deck: [], loot: [], played: [] },
 		p2: { hand: [], deck: [], loot: [], played: [] },
 	},
+	votes: { p1: null, p2: null },	// null, "p1", "p2", "tie"
+	idToSlot: {},	// { id: slot }
 	field: [],
 	round: 1,
-	phase: GAME_PHASE.GAME_START,
-	winner: null,
+	phase: GAME_PHASE.GAME_READY,
+	roundWinner: null,	// null, "p1", "p2", "tie"
+	gameWinner: null,
 };
+
+export const validVotes = ["p1", "p2", "tie"];
+export const validPlayers = ["p1", "p2"];
 
 // --- Helper Functions ---
 // Construct a full deck of poker cards 13 x 4.
@@ -71,7 +77,7 @@ const playCards = (player, cards) => {
 		}
 	}
 
-	if (played.length !== cards.length) return player;
+	if (played.length !== cards.length) return player;	// check illegal cards
 	return {
 		...player,
 		hand: newHand,
@@ -104,6 +110,7 @@ const mergeLoot = (player) => {
 	};
 };
 
+// TODO: merge into reducer as a special action
 const mergeLootIntoDeck = (state, rand) => {
 	const { p1, p2 } = state.players;
 	const newP1 = mergeLoot(p1);
@@ -127,7 +134,7 @@ const mergeLootIntoDeck = (state, rand) => {
 	return {
 		...state,
 		players: { p1: newP1, p2: newP2 },
-		phase: GAME_PHASE.ROUND_PREP,
+		phase: GAME_PHASE.DRAW_CARDS,
 		round: state.round + 1,
 	}
 };
@@ -137,8 +144,8 @@ export function gameReducer(state, action) {
 	switch (action.type) {
 		case GAME_ACTYPE.SETUP_GAME: {
 			const { phase } = state;
-			const rand = action.payload;
-			if (phase != GAME_PHASE.GAME_START) return state;
+			const { id1, id2, rand } = action.payload;
+			if (phase != GAME_PHASE.GAME_READY) return state;
 
 			const deck = buildDeck();
 			const shuffledDeck = shuffleFisherYates(deck, rand);
@@ -148,7 +155,8 @@ export function gameReducer(state, action) {
 					p1: { hand: [], deck: shuffledDeck.slice(0, 26), loot: [], played: [] },
 					p2: { hand: [], deck: shuffledDeck.slice(26), loot: [], played: [] },
 				},
-				phase: GAME_PHASE.ROUND_PREP,
+				idToSlot: { [id1]: "p1", [id2]: "p2" },
+				phase: GAME_PHASE.DRAW_CARDS,
 			}
 		}
 
@@ -156,10 +164,17 @@ export function gameReducer(state, action) {
 			return INITIAL_GAME_STATE;
 		}
 
+		case GAME_ACTYPE.SYNC_STATE: {
+			return action.payload;
+		}
+
+		// --- In-Game Actions ---
+		// 1. draw cards
 		case GAME_ACTYPE.DRAW_CARDS: {
 			const { players, phase } = state;
 			const { p1, p2 } = players;
-			if (phase !== GAME_PHASE.ROUND_PREP) return state;
+
+			if (phase !== GAME_PHASE.DRAW_CARDS) return state;
 
 			return {
 				...state,
@@ -167,63 +182,124 @@ export function gameReducer(state, action) {
 					p1: drawFromDeck(p1, MAX_HAND_COUNT),
 					p2: drawFromDeck(p2, MAX_HAND_COUNT),
 				},
-				phase: GAME_PHASE.ROUND_DRAWED,
+				phase: GAME_PHASE.PLAY_CARDS,
 			}
 		}
 
+		// 2.a. play cards
 		case GAME_ACTYPE.PLAY_CARDS: {
 			const { players, field, phase } = state;
 			const { slot, cards } = action.payload;
 			const player = players[slot];
 
-			if (phase !== GAME_PHASE.ROUND_DRAWED) return state;
-			if (player.played.length > 0) return state;
-			if (cards.length !== PLAY_CARD_COUNT) return state;
+			if (phase !== GAME_PHASE.PLAY_CARDS) return state;	// check phase
+			if (player.played.length > 0) return state;					// check if already played
+			if (cards.length !== PLAY_CARD_COUNT) return state;	// check illegal cards
 
 			const newPlayer = playCards(player, cards);
-			const newState = {
+			return {
 				...state,
-				players: {
-					...players,
-					[slot]: newPlayer,
-				},
+				players: { ...players, [slot]: newPlayer },
 				field: [...field, ...newPlayer.played],
 			};
+		}
 
-			// Update phase when both players played
-			const allPlayersPlayed = Object.values(newState.players)
+		// 2.b. flip cards (upon everyone played)
+		case GAME_ACTYPE.FLIP_CARDS: {
+			const { players, phase } = state;
+			const allPlayersPlayed = Object.values(players)
 				.every((p) => p.played.length > 0);
-			if (allPlayersPlayed) {
-				newState.players = {
-					p1: resetPlayed(newState.players.p1),
-					p2: resetPlayed(newState.players.p2),
+
+			if (phase !== GAME_PHASE.PLAY_CARDS) return state;	// check phase
+			if (!allPlayersPlayed) return state;								// check all players played
+
+			return {
+				...state,
+				players: {
+					p1: resetPlayed(players.p1),
+					p2: resetPlayed(players.p2),
+				},
+				phase: GAME_PHASE.VOTE_WINNER,
+			}
+		}
+
+		// 3.a. vote winner
+		case GAME_ACTYPE.VOTE_WINNER: {
+			const { votes, phase } = state;
+			const { slot, voteFor } = action.payload;
+
+			if (phase !== GAME_PHASE.VOTE_WINNER) return state;
+			if (votes[slot]) return state;
+			if (!validVotes.includes(voteFor)) return state;
+
+			return {
+				...state,
+				votes: { ...votes, [slot]: voteFor },
+			}
+		}
+
+		// 3.b. decide winner (upon everyone voted)
+		case GAME_ACTYPE.DECIDE_WINNER: {
+			const { votes, phase } = state;
+			const voteValues = Object.values(votes);
+			const roundWinner = voteValues[0];
+			const allPlayersVoted = voteValues.every(v => validVotes.includes(v));
+			const allPlayersConsensus = voteValues.every(v => v === roundWinner);
+
+			if (phase !== GAME_PHASE.VOTE_WINNER) return state;
+			if (!allPlayersVoted) return state;
+
+			if (!allPlayersConsensus) {
+				// Vote again if players don't agree.
+				return {
+					...state,
+					votes: { p1: null, p2: null },
 				}
-				newState.phase = GAME_PHASE.ROUND_PLAYED;
+			} else {
+				return {
+					...state,
+					votes: { p1: null, p2: null },
+					phase: GAME_PHASE.LOOT_CARDS,
+					roundWinner: roundWinner,
+				}
+			}
+		}
+
+		// 4. loot winner
+		case GAME_ACTYPE.LOOT_CARDS: {
+			const { players, field, phase, roundWinner: winner } = state;
+
+			if (phase !== GAME_PHASE.LOOT_CARDS) return state;
+
+			const newState = {
+				...state,
+				field: [],
+				phase: GAME_PHASE.NEXT_ROUND,
+				roundWinner: null,
+			};
+			if (validPlayers.includes(winner)) {
+				// One player takes all.
+				newState.players = {
+					...players,
+					[winner]: lootCards(players[winner], field),
+				};
+			} else {
+				// Players chop cards.
+				const chopSize = field.length / 2;
+				newState.players = {
+					p1: lootCards(players.p1, field.slice(0, chopSize)),
+					p2: lootCards(players.p2, field.slice(chopSize)),
+				};
 			}
 			return newState;
 		}
 
-		case GAME_ACTYPE.LOOT_CARDS: {
-			const { players, field, phase } = state;
-			const slot = action.payload;
-			const player = players[slot];
-
-			if (phase !== GAME_PHASE.ROUND_PLAYED) return state;
-			return {
-				...state,
-				players: {
-					...players,
-					[slot]: lootCards(player, field),
-				},
-				field: [],
-				phase: GAME_PHASE.ROUND_RESULT,
-			};
-		}
-
+		// 5. new round
 		case GAME_ACTYPE.NEXT_ROUND: {
 			const { players, phase, round } = state;
 			const rand = action.payload;
-			if (phase !== GAME_PHASE.ROUND_RESULT) return state;
+
+			if (phase !== GAME_PHASE.NEXT_ROUND) return state;
 
 			const somePlayerDeckEmpty = Object.values(players)
 				.some((p) => p.deck.length == 0);
@@ -233,13 +309,10 @@ export function gameReducer(state, action) {
 
 			return {
 				...state,
-				phase: GAME_PHASE.ROUND_PREP,
+				phase: GAME_PHASE.DRAW_CARDS,
 				round: round + 1,
 			};
 		}
-
-		case GAME_ACTYPE.SYNC_STATE:
-			return action.payload;
 
 		default:
 			return state;
