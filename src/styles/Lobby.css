@@ -1,0 +1,233 @@
+/* Lobby.css */
+/* --- LAYOUT: Position, Size, and Spacing --- */
+
+.lobby__container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+  padding: 40px;
+  overflow: hidden;
+}
+
+/* Logo */
+.lobby__logo-section {
+  flex: 4;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+/* Actions */
+.lobby__actions {
+  flex: 6;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Footer */
+.lobby__footer {
+  height: 30px;
+  margin-bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Other Components */
+.lobby__default-group,
+.lobby__input-group,
+.lobby__waiting-group {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+}
+
+.lobby__btn,
+.lobby__input,
+.lobby__id-card {
+  width: 100%;
+  padding: 18px;
+  border: none;
+  border-radius: 12px;
+  box-sizing: border-box;
+}
+
+.lobby_input,
+.lobby__id-card {
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+/* --- AESTHETICS: Skin, Colors, and Polish (Original Style) --- */
+
+.lobby__container {
+  background: #2c3e50;
+  color: white;
+  box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+  border-radius: 12px;
+}
+
+/* Logo */
+.lobby__logo-section {
+  text-align: center;
+}
+
+.lobby__title {
+  font-size: 3.5rem;
+  font-weight: 900;
+  margin: 0;
+  background: linear-gradient(to bottom, #fde047, #ca8a04);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5));
+}
+
+.lobby__subtitle {
+  font-size: 0.9rem;
+  letter-spacing: 0.3rem;
+  opacity: 0.6;
+  margin-top: 10px;
+}
+
+/* Actions: default */
+.lobby__btn {
+  font-size: 1.1rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.1s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.lobby__btn:hover {
+  filter: brightness(1.05);
+}
+
+.lobby__btn:active {
+  transform: scale(0.96);
+}
+
+.lobby__btn--host {
+  background: #10b981;
+  color: white;
+  box-shadow: 0 4px 14px 0 rgba(16, 185, 129, 0.3);
+}
+
+.lobby__btn--join {
+  background: #3b82f6;
+  color: white;
+  box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.3);
+}
+
+/* Actions: join */
+@keyframes lobbySwitchIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.lobby__input-group,
+.lobby__waiting-group {
+  animation: lobbySwitchIn 0.3s ease-out;
+}
+
+.lobby__input {
+  border: 2px solid #334155;
+  background: #0f172a;
+  color: white;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.lobby__input:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.lobby__btn--connect {
+  background: #f59e0b;
+  color: white;
+}
+
+.lobby__btn--back {
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  font-size: 0.9rem;
+  margin-top: 10px;
+  transition: color 0.2s;
+}
+
+.lobby__btn--back:active {
+  transform: scale(0.95);
+}
+
+.lobby__btn--back:hover {
+  color: white;
+}
+
+/* Actions: waiting */
+.lobby__btn--disconnect {
+  background: #ef4444;
+  color: white;
+}
+
+.lobby__id-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid #475569;
+  cursor: pointer;
+  transition: all 0.5s ease;
+  user-select: none;
+
+  font-family: monospace;
+  font-size: 1rem;
+  color: #fbbf24;
+  transition: color 0.5s;
+}
+
+.lobby__id-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: #fde047;
+}
+
+.lobby__id-card:active {
+  transform: scale(0.98);
+}
+
+/* Footer and others */
+.lobby__divider {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin: 10px 0;
+}
+
+.lobby__waiting-text {
+  font-size: 1.0rem;
+  letter-spacing: 0.1rem;
+  font-weight: 500;
+  color: #ca8a04;
+}
+
+.lobby__footer {
+  font-size: 0.75rem;
+  color: #64748b;
+}

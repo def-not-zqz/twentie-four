@@ -1,0 +1,83 @@
+/* --- LOADER COMPONENT STYLES --- */
+
+.loader__wrapper {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  transition: all 0.5s ease;
+}
+
+/* 加载中的旋转主体 */
+.loader__spinner {
+  width: 100%;
+  height: 100%;
+  border: 4px solid rgba(255, 255, 255, 0.1);
+  border-top: 4px solid #fde047;
+  /* 你的金黄色主题 */
+  border-radius: 50%;
+  animation: spin 3s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+}
+
+/* 装饰用的呼吸光晕 */
+.loader__wrapper::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 2px solid #fde047;
+  opacity: 0;
+  animation: pulse 2s infinite;
+}
+
+/* 完成状态的样式 */
+.loader--complete {
+  background: #10b981;
+  /* 成功绿 */
+  border-radius: 50%;
+  transform: scale(1.1);
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+}
+
+.loader__check-icon {
+  width: 34px;
+  height: 34px;
+  color: white;
+  /* 绘制对勾的动画 */
+  stroke-dasharray: 50;
+  stroke-dashoffset: 50;
+  animation: drawCheck 0.5s ease-in-out forwards;
+}
+
+/* --- 动画定义 --- */
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+@keyframes drawCheck {
+  to {
+    stroke-dashoffset: 0;
+  }
+}

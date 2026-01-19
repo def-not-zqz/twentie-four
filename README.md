@@ -5,6 +5,12 @@ Simple online game that supports P2P hosting.
 
 ## Change Log
 
+### v0.0.3
+UI implementation
+- Implements `Lobby` page:
+    - Implements 3 stages: default, joining room, and waiting to join.
+    - Implements `Loader` component.
+
 ### v0.0.2
 - Improves `useP2PHost` hook:
     - Cleans up `connReducer` and constants from `useP2PHost.js`.

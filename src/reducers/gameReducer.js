@@ -145,7 +145,7 @@ export function gameReducer(state, action) {
 		case GAME_ACTYPE.SETUP_GAME: {
 			const { phase } = state;
 			const { id1, id2, rand } = action.payload;
-			if (phase != GAME_PHASE.GAME_READY) return state;
+			if (phase !== GAME_PHASE.GAME_READY) return state;
 
 			const deck = buildDeck();
 			const shuffledDeck = shuffleFisherYates(deck, rand);
@@ -302,7 +302,7 @@ export function gameReducer(state, action) {
 			if (phase !== GAME_PHASE.NEXT_ROUND) return state;
 
 			const somePlayerDeckEmpty = Object.values(players)
-				.some((p) => p.deck.length == 0);
+				.some((p) => p.deck.length === 0);
 			if (somePlayerDeckEmpty) {
 				return mergeLootIntoDeck(state, rand);
 			}
