@@ -4,7 +4,7 @@
 
 .App {
   display: flex;
-  min-height: 100vh;
+  height: 100dvh;
   background-color: #1a1a1a;
   overflow-x: hidden;
 }
@@ -23,7 +23,7 @@
   min-width: 320px;
   max-width: 420px;
   height: 100%;
-  margin: 5px auto;
+  margin: 0 auto;
   box-sizing: border-box;
 }
 

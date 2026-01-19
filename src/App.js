@@ -3,10 +3,11 @@ import './App.css';
 import { useGameRoom } from './hooks/useGameRoom';
 import GameRoom from './components/GameRoom';
 import Lobby from './components/Lobby';
+import GamePlay from './components/GamePlay';
 
 function App() {
   const { connState, isHost, isConnected, connHandles,
-    gameState, gameHandles } = useGameRoom();
+    gameState, playerSelf, playerOther, gameHandles } = useGameRoom();
 
   return (
     <div className="App">
@@ -27,10 +28,16 @@ function App() {
               status={connState.status}
             />
           ) : (
-            <div className="game-play-area">
-              {/* 这是我们下一步要写的战斗Page */}
-              GAME PLAY
-            </div>
+            <GamePlay
+              playerSelf={playerSelf}
+              playerOpponent={playerOther}
+              field={gameState.field}
+              phase={gameState.phase}
+              handlePlay={gameHandles.play}
+              handleWin={gameHandles.voteSelf}
+              handleTie={gameHandles.voteTie}
+              handleLose={gameHandles.voteOther}
+            />
           )}
         </div>
       </div>

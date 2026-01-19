@@ -36,7 +36,7 @@ export const useGameLogic = () => {
   // --- API: Helper Functions ---
   const getSlot = useCallback((id) => {
     return convertIdToSlot(id, state.idToSlot);
-  }, [state]);
+  }, [state.idToSlot]);
 
   // --- API: Action Creators ---
   const drawCardsAction = () => ({ type: GAME_ACTYPE.DRAW_CARDS });

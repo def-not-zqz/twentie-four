@@ -1,0 +1,83 @@
+/* --- LAYOUT: PlayerZone Horizontal Structure --- */
+
+.player-zone {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px;
+  box-sizing: border-box;
+  gap: 10px;
+}
+
+/* 两侧统计区：固定宽度 */
+.player-zone__stats-aside {
+  flex: 0 0 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  align-items: center;
+}
+
+/* 中间手牌区：占据剩余所有空间 */
+.player-zone__hand-container {
+  height: 100%;
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.player-zone__hand-container .poker-card {
+  height: 80%;
+}
+
+.player-zone__card-count {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+/* --- AESTHETICS: Look and Feel --- */
+
+.player-zone__card-back {
+  background: #334155;
+  border: 2px solid #64748b;
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* 卡组和战利品的数字容器 */
+.player-zone__card-count {
+  background: rgba(15, 23, 42, 0.6);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-family: monospace;
+  font-weight: bold;
+  color: #fbbf24;
+}
+
+.player-zone__stats-aside small {
+  font-size: 0.6rem;
+  color: #64748b;
+  letter-spacing: 1px;
+}
+
+.player-zone__empty-slot {
+  font-size: 0.7rem;
+  color: #334155;
+  border: 1px dashed #334155;
+  padding: 10px 20px;
+  border-radius: 4px;
+}
+
+/* 简单的镜像处理：如果是对手，可以把样式调淡一点点 */
+.player-zone--opponent {
+  opacity: 0.9;
+}

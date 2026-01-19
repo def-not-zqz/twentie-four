@@ -5,6 +5,14 @@ Simple online game that supports P2P hosting.
 
 ## Change Log
 
+### v0.1.0
+UI Implementation
+- Completes UI of all components, including:
+    - Main `GamePlay` page, `PlayerZone` component, `TableArea` component, `Controls` component
+    - Re-usable `PokerCards` component with flip animation
+- Handles all API connections from the game logic to UI components.
+- Game is now ready to play!
+
 ### v0.0.3
 UI implementation
 - Implements `Lobby` page:

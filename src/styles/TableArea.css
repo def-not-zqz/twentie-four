@@ -1,0 +1,43 @@
+/* --- LAYOUT: 1x4 Fields Container --- */
+
+.table-area {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px 0;
+}
+
+.table-area__container {
+  display: grid;
+  /* 强制 1 行 4 列，每个格子等宽 */
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  width: 95%;
+  max-width: 420px;
+  /* 适配手机竖屏的最大宽度 */
+  box-sizing: border-box;
+}
+
+.table-area__slot {
+  width: 100%;
+  /* 锁定卡牌比例，防止内容撑开变形 */
+  aspect-ratio: 2 / 3;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.table-area__slot .poker-card {
+  height: 100%;
+}
+
+/* --- AESTHETICS: Subtle Field Styling --- */
+
+/* 给整个区域一个隐约的底色，增加“桌面”的感觉 */
+.table-area__container {
+  background: rgba(255, 255, 255, 0.02);
+  padding: 15px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}

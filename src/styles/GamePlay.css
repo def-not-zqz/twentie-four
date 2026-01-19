@@ -1,0 +1,82 @@
+/* --- LAYOUT: Grid or Flex Stacking --- */
+
+.game__container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* 区域比例分配 */
+.game__opponent-zone {
+  flex: 1.5;
+  /* 对手信息不需要太大 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.game__table-zone {
+  flex: 4;
+  /* 核心区域：放发出来的 4 张牌 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.game__self-zone {
+  flex: 2.5;
+  /* 自己的手牌/计算区 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.game__controls-zone {
+  flex: 2;
+  /* 按钮、洗牌、确认等操作 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* --- AESTHETICS: Visual Scaffolding (Boilerplate) --- */
+
+.game__container {
+  background: #1e293b;
+  /* 延续深色风格 */
+  color: white;
+}
+
+.placeholder-content {
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  width: 90%;
+  height: 80%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+/* 为了调试方便，给每块区域一点点背景区分 */
+.game__opponent-zone {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.game__table-zone {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.game__self-zone {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.game__controls-zone {
+  background: rgba(0, 0, 0, 0.2);
+}

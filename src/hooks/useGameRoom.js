@@ -18,6 +18,9 @@ export const useGameRoom = () => {
     = useP2PHost(hostCapacity, onMessageReceived);
   const { isHost, isConnected } = connInfo;
 
+  const playerSelf = gameState.players[gameState.idToSlot[connState.myId]] || {};
+  const playerOther = gameState.players[gameState.idToSlot[connState.peersId[0]]] || {};
+
   // --- Adaptive Dispatch for Host and Guests ---
   const handleAction = useCallback((action, hostOnly = false) => {
     debug(`[GameRoom] handling action ${JSON.stringify(action)}...`);
@@ -89,6 +92,13 @@ export const useGameRoom = () => {
     if (isHost) broadcast(gameActions.sync(gameState));
   }, [gameState, isHost, broadcast, gameActions]);
 
+  // Start game upon connected.
+  useEffect(() => {
+    if (connState.status === CONN_STATUS.HOST_CONNECTED) {
+      handleStartGame();
+    }
+  }, [connState.status, handleStartGame]);
+
   // Game phase automator.
   useEffect(() => {
     if (!isHost) return;
@@ -131,6 +141,8 @@ export const useGameRoom = () => {
     connState,
     isHost,
     isConnected,
+    playerSelf,
+    playerOther,
     connHandles: {
       host: hostRoom,
       join: joinRoom,

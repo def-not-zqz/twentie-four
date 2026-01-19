@@ -45,7 +45,7 @@ export const GAME_PHASE = {
   NEXT_ROUND: "GAME_PHASE/NEXT_ROUND",
 };
 
-export const CARD_NUMBERS = [
+export const CARD_VALUES = [
   "A", "K", "Q", "J", "10", "9", "8", "7", "6", "5", "4", "3", "2",
 ];
 
