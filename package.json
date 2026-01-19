@@ -2,6 +2,7 @@
   "name": "twentie-four",
   "version": "0.1.0",
   "private": true,
+  "homepage": "https://def-not-zqz.github.io/twentie-four",
   "dependencies": {
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",

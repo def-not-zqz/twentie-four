@@ -1,3 +1,6 @@
+// --- Global constants ---
+export const DEV_MODE = true;
+
 // --- connReducer, useP2PHost ---
 export const CONN_ACTYPE = {
   SETUP_PEER: "CONN_ACTYPE/SETUP_PEER",

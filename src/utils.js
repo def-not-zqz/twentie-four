@@ -1,4 +1,4 @@
-export const DEV_MODE = true;
+import { DEV_MODE } from "./constants";
 
 export function debug(...args) {
   if (DEV_MODE) {
