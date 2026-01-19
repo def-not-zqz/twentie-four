@@ -1,6 +1,6 @@
 {
   "name": "twentie-four",
-  "version": "0.1.0",
+  "version": "0.0.3",
   "private": true,
   "dependencies": {
     "@testing-library/dom": "^10.4.1",
